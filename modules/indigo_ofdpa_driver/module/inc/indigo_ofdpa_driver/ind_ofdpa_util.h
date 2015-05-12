@@ -64,7 +64,11 @@ indigo_error_t indigoConvertOfdpaRv(OFDPA_ERROR_t result);
 /* Short hand logging macros */
 #define LOG_ERROR AIM_LOG_ERROR
 #define LOG_WARN AIM_LOG_WARN
+
+#ifdef ROBS_HACK
 #define LOG_INFO AIM_LOG_INFO
+#endif
+
 #define LOG_VERBOSE AIM_LOG_VERBOSE
 #define LOG_TRACE AIM_LOG_TRACE
 

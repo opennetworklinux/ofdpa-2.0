@@ -2936,14 +2936,18 @@ void ind_ofdpa_flow_event_receive(void)
     if (flowEventData.eventMask & OFDPA_FLOW_EVENT_HARD_TIMEOUT)
     {
       LOG_TRACE("Received flow event on hard timeout.");
+#ifdef ROBS_HACK
       ind_core_flow_expiry_handler(flowEventData.flowMatch.cookie,
                                    INDIGO_FLOW_REMOVED_HARD_TIMEOUT);
+#endif
     }
     else
     {
       LOG_TRACE("Received flow event on idle timeout.");
+#ifdef ROBS_HACK
       ind_core_flow_expiry_handler(flowEventData.flowMatch.cookie,
                                    INDIGO_FLOW_REMOVED_IDLE_TIMEOUT);
+#endif
     }
   }
   return;
@@ -2964,10 +2968,10 @@ static void ind_ofdpa_key_to_match(uint32_t portNum, of_match_t *match)
 
 static indigo_error_t
 ind_ofdpa_fwd_pkt_in(of_port_no_t in_port,
-               uint8_t *data, unsigned int len, unsigned reason,
+               char *data, unsigned int len, unsigned reason,
                of_match_t *match, OFDPA_FLOW_TABLE_ID_t tableId)
 {
-  of_octets_t of_octets = { .data = data, .bytes = len };
+  of_octets_t of_octets = { .data = (uint8_t *) data, .bytes = len };
   of_packet_in_t *of_packet_in;
 
   LOG_TRACE("Sending packet-in");
