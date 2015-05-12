@@ -43,13 +43,13 @@ ind_ofdpa_translate_group_actions(of_list_action_t *actions,
     of_action_t act;
     int rv;
     uint16_t vlanId;
-    of_oxm_t oxm;
+    of_oxm_t oxm;   // of_oxm_t == of_object_t
 
     OF_LIST_ACTION_ITER(actions, &act, rv) {
-        switch (act.header.object_id) {
+        switch (act.object_id) {
         case OF_ACTION_OUTPUT: {
             of_port_no_t port_no;
-            of_action_output_port_get(&act.output, &port_no);
+            of_action_output_port_get(&act, &port_no);
             switch (port_no) {
                 case OF_PORT_DEST_CONTROLLER:
                 case OF_PORT_DEST_FLOOD:
@@ -68,46 +68,38 @@ ind_ofdpa_translate_group_actions(of_list_action_t *actions,
             break;
         }
         case OF_ACTION_SET_FIELD: {
-            /* HACK loci does not yet support the OXM field in the set-field action */
-            of_oxm_header_init(&oxm.header, act.header.version, 0, 1);
-            oxm.header.wire_object = act.header.wire_object;
-            oxm.header.wire_object.obj_offset += 4; /* skip action header */ 
-            oxm.header.parent = &act.header;
-            of_object_wire_init(&oxm.header, OF_OXM, 0);
-            if (oxm.header.length == 0) {
-                LOG_ERROR("failed to parse set-field action");
-                return INDIGO_ERROR_COMPAT;
-            }
-            switch (oxm.header.object_id) {
+            of_action_set_field_field_bind(&act, &oxm);
+            switch (oxm.object_id) {
                 case OF_OXM_VLAN_VID: 
-                    of_oxm_vlan_vid_value_get(&oxm.vlan_vid, &vlanId);
+                    of_oxm_vlan_vid_value_get(&oxm, &vlanId);
                     group_bucket->vlanId = vlanId & OFDPA_VID_EXACT_MASK;
                     *group_action_sf_bitmap |= IND_OFDPA_VLANID;
                     break;
                 
                 case OF_OXM_ETH_SRC: 
-                    of_oxm_eth_src_value_get(&oxm.eth_src, &group_bucket->srcMac);
+                    of_oxm_eth_src_value_get(&oxm, &group_bucket->srcMac);
                     *group_action_sf_bitmap |= IND_OFDPA_SRCMAC;
                     break;
                 
                 case OF_OXM_ETH_DST: 
-                    of_oxm_eth_dst_value_get(&oxm.eth_dst, &group_bucket->dstMac);
+                    of_oxm_eth_dst_value_get(&oxm, &group_bucket->dstMac);
                     *group_action_sf_bitmap |= IND_OFDPA_DSTMAC;
                     break;
                 
                 case OF_OXM_MPLS_LABEL: 
-                    of_oxm_mpls_label_value_get(&oxm.mpls_label, &group_bucket->mplsLabel);
+                    of_oxm_mpls_label_value_get(&oxm, &group_bucket->mplsLabel);
                     *group_action_sf_bitmap |= IND_OFDPA_MPLS_LABEL;
                     break;
                 
                 case OF_OXM_VLAN_PCP:
                 {
                     uint8_t pcp;
-                    of_oxm_vlan_pcp_value_get(&oxm.vlan_pcp, &pcp);
+                    of_oxm_vlan_pcp_value_get(&oxm, &pcp);
                     group_bucket->vlanPcp = pcp;
                     *group_action_sf_bitmap |= IND_OFDPA_VLAN_PCP;
                     break;
                 }
+#ifdef ROBS_HACK
                 case OF_OXM_OFDPA_DEI:
                 {
                     uint8_t dei;
@@ -116,10 +108,11 @@ ind_ofdpa_translate_group_actions(of_list_action_t *actions,
                     *group_action_sf_bitmap |= IND_OFDPA_VLAN_DEI;
                     break;
                 }
+#endif // ROBS_HACK
                 case OF_OXM_IP_DSCP:
                 {
                     uint8_t dscp;
-                    of_oxm_ip_dscp_value_get(&oxm.ip_dscp, &dscp);
+                    of_oxm_ip_dscp_value_get(&oxm, &dscp);
                     group_bucket->dscp = dscp;
                     *group_action_sf_bitmap |= IND_OFDPA_IP_DSCP;
                     break;
@@ -127,7 +120,7 @@ ind_ofdpa_translate_group_actions(of_list_action_t *actions,
                 case OF_OXM_MPLS_BOS:
                 {
                     uint8_t bos;
-                    of_oxm_mpls_bos_value_get(&oxm.mpls_bos, &bos);
+                    of_oxm_mpls_bos_value_get(&oxm, &bos);
                     group_bucket->mplsBOS = bos;
                     *group_action_sf_bitmap |= IND_OFDPA_MPLS_BOS;
                     break;
@@ -135,11 +128,12 @@ ind_ofdpa_translate_group_actions(of_list_action_t *actions,
                 case OF_OXM_MPLS_TC:
                 {
                     uint8_t tc;
-                    of_oxm_mpls_tc_value_get(&oxm.mpls_tc, &tc);
+                    of_oxm_mpls_tc_value_get(&oxm, &tc);
                     group_bucket->mplsEXP = tc;
                     *group_action_sf_bitmap |= IND_OFDPA_MPLS_TC;
                     break;
                 }
+#ifdef ROBS_HACK
                 case OF_OXM_OFDPA_MPLS_TTL:
                 {
                     uint8_t ttl;
@@ -148,8 +142,9 @@ ind_ofdpa_translate_group_actions(of_list_action_t *actions,
                     *group_action_sf_bitmap |= IND_OFDPA_MPLS_TTL;
                     break;
                 }
+#endif // ROBS_HACK
                 default:
-                    LOG_ERROR("unsupported set-field oxm %s", of_object_id_str[oxm.header.object_id]);
+                    LOG_ERROR("unsupported set-field oxm %s", of_object_id_str[oxm.object_id]);
                     return INDIGO_ERROR_COMPAT;
             }
             break;
@@ -173,7 +168,7 @@ ind_ofdpa_translate_group_actions(of_list_action_t *actions,
         case OF_ACTION_PUSH_VLAN:
         {
             uint16_t eth_type;
-            of_action_push_vlan_ethertype_get(&act.push_vlan, &eth_type);
+            of_action_push_vlan_ethertype_get(&act, &eth_type);
             group_bucket->pushVlan = 1;
             group_bucket->newTpid = eth_type;
             *group_action_bitmap |= IND_OFDPA_PUSH_VLAN;
@@ -182,7 +177,7 @@ ind_ofdpa_translate_group_actions(of_list_action_t *actions,
         case OF_ACTION_PUSH_MPLS:
         {
             uint16_t ether_type;
-            of_action_push_mpls_ethertype_get(&act.push_mpls, &ether_type);
+            of_action_push_mpls_ethertype_get(&act, &ether_type);
             group_bucket->pushMplsHdr = 1;
             group_bucket->mplsEtherType = ether_type;
             *group_action_bitmap |= IND_OFDPA_PUSH_MPLS;
@@ -191,7 +186,7 @@ ind_ofdpa_translate_group_actions(of_list_action_t *actions,
         case OF_ACTION_SET_MPLS_TTL:
         {
             uint8_t ttl;
-            of_action_set_mpls_ttl_mpls_ttl_get(&act.push_mpls, &ttl);
+            of_action_set_mpls_ttl_mpls_ttl_get(&act, &ttl);
             group_bucket->mplsTTL = ttl;
             *group_action_bitmap |= IND_OFDPA_SET_MPLS_TTL;
             break;
@@ -200,12 +195,11 @@ ind_ofdpa_translate_group_actions(of_list_action_t *actions,
             group_bucket->mplsCopyTTLOutwards = 1;
             *group_action_bitmap |= IND_OFDPA_COPY_TTL_OUT;
             break;
-        
+#ifdef ROBS_HACK
         case OF_ACTION_OFDPA_PUSH_L2HDR:
             group_bucket->pushL2Hdr = 1;
             *group_action_bitmap |= IND_OFDPA_PUSH_L2_HDR;
             break;
-        
         case OF_ACTION_OFDPA_PUSH_CW:
             group_bucket->pushCW = 1;
             *group_action_bitmap |= IND_OFDPA_PUSH_CW;
@@ -240,10 +234,12 @@ ind_ofdpa_translate_group_actions(of_list_action_t *actions,
             *group_action_bitmap |= IND_OFDPA_DSCP_REMARK_TABLE_INDEX;
             break;
         }
+#endif // ROBS_HACK        
         case OF_ACTION_GROUP: 
-            of_action_group_group_id_get(&act.group, &group_bucket->referenceGroupId);
+            of_action_group_group_id_get(&act, &group_bucket->referenceGroupId);
             *group_action_bitmap |= IND_OFDPA_REFGROUP;
             break;
+#ifdef ROBS_HACK
         case OF_ACTION_OFDPA_OAM_LM_TX_COUNT:
         {
             uint32_t lmepId;
@@ -252,9 +248,10 @@ ind_ofdpa_translate_group_actions(of_list_action_t *actions,
             *group_action_bitmap |= IND_OFDPA_OAM_LM_TX_COUNT;
             break;
         }
+#endif // ROBS_HACK
         
         default:
-            LOG_ERROR("unsupported action %s", of_object_id_str[act.header.object_id]);
+            LOG_ERROR("unsupported action %s", of_object_id_str[act.object_id]);
             return INDIGO_ERROR_COMPAT;
         }
     }

@@ -188,11 +188,12 @@ static void ind_ofdpa_populate_flow_bitmask(const of_match_t *match)
     ind_ofdpa_match_fields_bitmask |= IND_OFDPA_VLAN_PCP;
   }
 
+#ifdef ROBS_HACK
   if (match->masks.ofdpa_dei != 0)
   {
     ind_ofdpa_match_fields_bitmask |= IND_OFDPA_VLAN_DEI;
   }
-
+#endif // ROBS_HACK
   if (match->masks.arp_spa != 0)
   {
     ind_ofdpa_match_fields_bitmask |= IND_OFDPA_IPV4_ARP_SPA;
@@ -279,6 +280,7 @@ static void ind_ofdpa_populate_flow_bitmask(const of_match_t *match)
   {
     ind_ofdpa_match_fields_bitmask |= IND_OFDPA_MPLS_TC;
   }
+#ifdef ROBS_HACK
   if (match->masks.ofdpa_mpls_l2_port != 0)
   {
     ind_ofdpa_match_fields_bitmask |= IND_OFDPA_MPLS_L2_PORT;
@@ -287,10 +289,12 @@ static void ind_ofdpa_populate_flow_bitmask(const of_match_t *match)
   {
     ind_ofdpa_match_fields_bitmask |= IND_OFDPA_OVID;
   }
-  if (match->masks.ofdpa_vrf != 0)
+#endif
+  if (match->masks.bsn_vrf != 0)
   {
     ind_ofdpa_match_fields_bitmask |= IND_OFDPA_VRF;
   }
+#ifdef ROBS_HACK
   if (match->masks.ofdpa_qos_index != 0)
   {
     ind_ofdpa_match_fields_bitmask |= IND_OFDPA_QOS_INDEX;
@@ -347,6 +351,7 @@ static void ind_ofdpa_populate_flow_bitmask(const of_match_t *match)
   {
     ind_ofdpa_match_fields_bitmask |= IND_OFDPA_ACTSET_OUTPUT;
   }
+#endif // ROBS_HACK
   LOG_TRACE("match_fields_bitmask is 0x%llX", ind_ofdpa_match_fields_bitmask);
 }
 
@@ -445,7 +450,9 @@ static indigo_error_t ind_ofdpa_match_fields_masks_get(const of_match_t *match, 
 
       flow->flowData.vlan1FlowEntry.match_criteria.vlanId = match->fields.vlan_vid; 
 
+#ifdef ROBS_HACK
       flow->flowData.vlan1FlowEntry.match_criteria.brcmOvid = match->fields.ofdpa_ovid; 
+#endif // ROBS_HACK
 
       if (ind_ofdpa_match_fields_bitmask & IND_OFDPA_ETHER_TYPE)
       {
@@ -460,6 +467,7 @@ static indigo_error_t ind_ofdpa_match_fields_masks_get(const of_match_t *match, 
       }
       break;
    
+#ifdef ROBS_HACK    // seems a shame to lose an entire table -- FIXME!
     case OFDPA_FLOW_TABLE_ID_MAINTENANCE_POINT:
 
       if ((ind_ofdpa_match_fields_bitmask | IND_OFDPA_MP_FLOW_MATCH_BITMAP) != IND_OFDPA_MP_FLOW_MATCH_BITMAP)
@@ -494,6 +502,7 @@ static indigo_error_t ind_ofdpa_match_fields_masks_get(const of_match_t *match, 
         flow->flowData.mplsL2PortFlowEntry.match_criteria.etherTypeMask = match->masks.eth_type;
       }
       break;
+#endif // ROBS_HACK
    
     case OFDPA_FLOW_TABLE_ID_TERMINATION_MAC:
       if ((ind_ofdpa_match_fields_bitmask | IND_OFDPA_TERM_MAC_FLOW_MATCH_BITMAP) != IND_OFDPA_TERM_MAC_FLOW_MATCH_BITMAP)
@@ -558,6 +567,7 @@ static indigo_error_t ind_ofdpa_match_fields_masks_get(const of_match_t *match, 
         flow->flowData.mplsFlowEntry.match_criteria.inPort = match->fields.in_port;
         flow->flowData.mplsFlowEntry.match_criteria.inPortMask = OFDPA_INPORT_EXACT_MASK;
       }
+#ifdef ROBS_HACK
       if (ind_ofdpa_match_fields_bitmask & IND_OFDPA_MPLS_TTL)
       {
         flow->flowData.mplsFlowEntry.match_criteria.mplsTtl = match->fields.ofdpa_mpls_ttl;
@@ -578,6 +588,7 @@ static indigo_error_t ind_ofdpa_match_fields_masks_get(const of_match_t *match, 
         flow->flowData.mplsFlowEntry.match_criteria.nextLabelIsGal = match->fields.ofdpa_mpls_next_label_is_gal;
         flow->flowData.mplsFlowEntry.match_criteria.nextLabelIsGalMask = match->masks.ofdpa_mpls_next_label_is_gal;
       }
+#endif // ROBS_HACK
       if (ind_ofdpa_match_fields_bitmask & IND_OFDPA_IPV4_DST)
       {
         flow->flowData.mplsFlowEntry.match_criteria.destIp4 = match->fields.ipv4_dst;
@@ -605,6 +616,7 @@ static indigo_error_t ind_ofdpa_match_fields_masks_get(const of_match_t *match, 
       }
       break;
       
+#ifdef ROBS_HACK
     case OFDPA_FLOW_TABLE_ID_MPLS_MAINTENANCE_POINT:
 
       if ((ind_ofdpa_match_fields_bitmask | IND_OFDPA_MPLS_MP_FLOW_MATCH_BITMAP) != IND_OFDPA_MPLS_MP_FLOW_MATCH_BITMAP)
@@ -618,7 +630,7 @@ static indigo_error_t ind_ofdpa_match_fields_masks_get(const of_match_t *match, 
       flow->flowData.mplsMpFlowEntry.match_criteria.oamY1731Opcode = match->fields.ofdpa_oam_y1731_opcode; 
 
       break;
-   
+#endif // ROBS_HACK
     case OFDPA_FLOW_TABLE_ID_UNICAST_ROUTING:
       if ((ind_ofdpa_match_fields_bitmask | IND_OFDPA_UCAST_ROUTING_FLOW_MATCH_BITMAP) != IND_OFDPA_UCAST_ROUTING_FLOW_MATCH_BITMAP)
       {
@@ -639,8 +651,8 @@ static indigo_error_t ind_ofdpa_match_fields_masks_get(const of_match_t *match, 
         memcpy(&flow->flowData.unicastRoutingFlowEntry.match_criteria.dstIp6Mask, &match->masks.ipv6_dst, OF_IPV6_BYTES);
       }
 
-      flow->flowData.unicastRoutingFlowEntry.match_criteria.vrf = match->fields.ofdpa_vrf;
-      flow->flowData.unicastRoutingFlowEntry.match_criteria.vrfMask= match->masks.ofdpa_vrf;
+      flow->flowData.unicastRoutingFlowEntry.match_criteria.vrf = match->fields.bsn_vrf;
+      flow->flowData.unicastRoutingFlowEntry.match_criteria.vrfMask= match->masks.bsn_vrf;
       break;
 
     case OFDPA_FLOW_TABLE_ID_MULTICAST_ROUTING:
@@ -654,8 +666,8 @@ static indigo_error_t ind_ofdpa_match_fields_masks_get(const of_match_t *match, 
       
       flow->flowData.multicastRoutingFlowEntry.match_criteria.vlanId = match->fields.vlan_vid & OFDPA_VID_EXACT_MASK;
       
-      flow->flowData.multicastRoutingFlowEntry.match_criteria.vrf = match->fields.ofdpa_vrf;
-      flow->flowData.multicastRoutingFlowEntry.match_criteria.vrfMask= match->masks.ofdpa_vrf;
+      flow->flowData.multicastRoutingFlowEntry.match_criteria.vrf = match->fields.bsn_vrf;
+      flow->flowData.multicastRoutingFlowEntry.match_criteria.vrfMask= match->masks.bsn_vrf;
 
       if (match->fields.eth_type == ETH_P_IP)
       {
@@ -694,6 +706,7 @@ static indigo_error_t ind_ofdpa_match_fields_masks_get(const of_match_t *match, 
 
     case OFDPA_FLOW_TABLE_ID_PORT_DSCP_TRUST:
     case OFDPA_FLOW_TABLE_ID_TUNNEL_DSCP_TRUST:
+#ifdef ROBS_HACK
     case OFDPA_FLOW_TABLE_ID_MPLS_DSCP_TRUST:
       if ((ind_ofdpa_match_fields_bitmask | IND_OFDPA_DSCP_TRUST_FLOW_MATCH_BITMAP) != IND_OFDPA_DSCP_TRUST_FLOW_MATCH_BITMAP)
       {
@@ -736,6 +749,7 @@ static indigo_error_t ind_ofdpa_match_fields_masks_get(const of_match_t *match, 
       flow->flowData.mplsQosFlowEntry.match_criteria.qosIndex = match->fields.ofdpa_qos_index;
       flow->flowData.mplsQosFlowEntry.match_criteria.mpls_tc = match->fields.mpls_tc;
       break;
+#endif // ROBS_HACK
 
     case OFDPA_FLOW_TABLE_ID_ACL_POLICY:
       if ((ind_ofdpa_match_fields_bitmask | IND_OFDPA_ACL_POLICY_FLOW_MATCH_BITMAP) != IND_OFDPA_ACL_POLICY_FLOW_MATCH_BITMAP)
@@ -842,6 +856,7 @@ static indigo_error_t ind_ofdpa_match_fields_masks_get(const of_match_t *match, 
         }
       }
 
+#ifdef ROBS_HACK
       /* Vlan DEI */
       if (ind_ofdpa_match_fields_bitmask & IND_OFDPA_VLAN_DEI)
       {
@@ -855,21 +870,22 @@ static indigo_error_t ind_ofdpa_match_fields_masks_get(const of_match_t *match, 
           flow->flowData.policyAclFlowEntry.match_criteria.vlanDeiMask = OFDPA_VLAN_DEI_VALUE_MASK;
         }
       }
-
+#endif
       /* VRF */
       if (ind_ofdpa_match_fields_bitmask & IND_OFDPA_VRF)
       {
-        flow->flowData.policyAclFlowEntry.match_criteria.vrf = match->fields.ofdpa_vrf;
-        flow->flowData.policyAclFlowEntry.match_criteria.vrfMask = match->masks.ofdpa_vrf;
+        flow->flowData.policyAclFlowEntry.match_criteria.vrf = match->fields.bsn_vrf;
+        flow->flowData.policyAclFlowEntry.match_criteria.vrfMask = match->masks.bsn_vrf;
       }
 
+#ifdef ROBS_HACK
       /* MPLS L2 PORT */
       if (ind_ofdpa_match_fields_bitmask & IND_OFDPA_MPLS_L2_PORT)
       {
         flow->flowData.policyAclFlowEntry.match_criteria.mplsL2Port = match->fields.ofdpa_mpls_l2_port;
         flow->flowData.policyAclFlowEntry.match_criteria.mplsL2PortMask = match->masks.ofdpa_mpls_l2_port;
       }
-
+#endif // ROBS_HACK
       if (match->fields.eth_type == ETH_P_IP) 
       {
         /* IPv4 SRC */
@@ -1188,8 +1204,9 @@ static indigo_error_t ind_ofdpa_match_fields_masks_get(const of_match_t *match, 
         break;
       }    
 
+#ifdef ROBS_HACK
       flow->flowData.egressVlanFlowEntry.match_criteria.outPort = match->fields.ofdpa_actset_output;
-
+#endif
       flow->flowData.egressVlanFlowEntry.match_criteria.vlanId = match->fields.vlan_vid; 
 
       if (ind_ofdpa_match_fields_bitmask & IND_OFDPA_ETHER_TYPE)
@@ -1213,11 +1230,14 @@ static indigo_error_t ind_ofdpa_match_fields_masks_get(const of_match_t *match, 
         break;
       }    
 
+#ifdef ROBS_HACK
       flow->flowData.egressVlan1FlowEntry.match_criteria.outPort = match->fields.ofdpa_actset_output;
-
+#endif // ROBS_HACK
       flow->flowData.egressVlan1FlowEntry.match_criteria.vlanId = match->fields.vlan_vid; 
 
+#ifdef ROBS_HACK
       flow->flowData.egressVlan1FlowEntry.match_criteria.brcmOvid = match->fields.ofdpa_ovid; 
+#endif // ROBS_HACK
 
       if (ind_ofdpa_match_fields_bitmask & IND_OFDPA_ETHER_TYPE)
       {
@@ -1240,11 +1260,12 @@ static indigo_error_t ind_ofdpa_match_fields_masks_get(const of_match_t *match, 
         break;
       }    
 
+#ifdef ROBS_HACK
       flow->flowData.egressMpFlowEntry.match_criteria.lmepId = match->fields.ofdpa_lmep_id;
-
       flow->flowData.egressMpFlowEntry.match_criteria.oamY1731Opcode = match->fields.ofdpa_oam_y1731_opcode; 
 
       flow->flowData.egressMpFlowEntry.match_criteria.oamY1731Mdl = match->fields.ofdpa_oam_y1731_mdl; 
+#endif // ROBS_HACK
       break;
    
     default:
@@ -1270,12 +1291,12 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
 
   OF_LIST_ACTION_ITER(actions, &act, rv) 
   {
-    LOG_TRACE("action %s for table %d", of_object_id_str[act.header.object_id], flow->tableId);
-    switch (act.header.object_id) 
+    LOG_TRACE("action %s for table %d", of_object_id_str[act.object_id], flow->tableId);
+    switch (act.object_id) 
     {
       case OF_ACTION_OUTPUT: 
       {
-        of_action_output_port_get(&act.output, &port_no);
+        of_action_output_port_get(&act, &port_no);
         switch (port_no) 
         {
           case OF_PORT_DEST_CONTROLLER: 
@@ -1368,23 +1389,19 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
       {
         /* HACK loci does not yet support the OXM field in the set-field action */
         of_oxm_t oxm;
-        of_oxm_header_init(&oxm.header, act.header.version, 0, 1);
-        oxm.header.wire_object = act.header.wire_object;
-        oxm.header.wire_object.obj_offset += 4; /* skip action header */
-        oxm.header.parent = &act.header;
-        of_object_wire_init(&oxm.header, OF_OXM, 0);
-        if (oxm.header.length == 0) 
+        of_action_set_field_field_bind(&act, &oxm);
+        if (oxm.length == 0) 
         {
           LOG_ERROR("Failed to parse set-field action");
           return INDIGO_ERROR_COMPAT;
         }
-        LOG_TRACE("set-field oxm %s for table %d", of_object_id_str[oxm.header.object_id], flow->tableId);
-        switch (oxm.header.object_id) 
+        LOG_TRACE("set-field oxm %s for table %d", of_object_id_str[oxm.object_id], flow->tableId);
+        switch (oxm.object_id) 
         {
           case OF_OXM_TUNNEL_ID: 
           {
             uint64_t tunnel_id;
-            of_oxm_tunnel_id_value_get(&oxm.tunnel_id, &tunnel_id);
+            of_oxm_tunnel_id_value_get(&oxm, &tunnel_id);
             if (flow->tableId == OFDPA_FLOW_TABLE_ID_VLAN)
             {
               flow->flowData.vlanFlowEntry.tunnelIdAction = 1;
@@ -1404,11 +1421,12 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
             }
             else
             {
-              LOG_ERROR("Unsupported set-field oxm %s for table %d", of_object_id_str[oxm.header.object_id], flow->tableId);
+              LOG_ERROR("Unsupported set-field oxm %s for table %d", of_object_id_str[oxm.object_id], flow->tableId);
               return INDIGO_ERROR_COMPAT;
             }
             break;
           }
+#ifdef ROBS_HACK
           case OF_OXM_OFDPA_MPLS_L2_PORT: 
           {
             uint32_t mpls_l2_port;
@@ -1437,14 +1455,15 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
             }
             break;
           }
-          case OF_OXM_OFDPA_VRF: 
+#endif // ROBS_HACK
+          case OF_OXM_BSN_VRF: 
           {
-            uint16_t vrf;
-            of_oxm_ofdpa_vrf_value_get(&oxm.ofdpa_vrf, &vrf);
+            uint32_t vrf;
+            of_oxm_bsn_vrf_value_get(&oxm, &vrf);
             if (flow->tableId == OFDPA_FLOW_TABLE_ID_INGRESS_PORT)
             {
               flow->flowData.ingressPortFlowEntry.vrfAction = 1;
-              flow->flowData.ingressPortFlowEntry.vrf = vrf;
+              flow->flowData.ingressPortFlowEntry.vrf = (uint16_t) vrf & 0x00ff;
             }
             else if (flow->tableId == OFDPA_FLOW_TABLE_ID_VLAN)
             {
@@ -1465,11 +1484,12 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
             }
             else
             {
-              LOG_ERROR("Unsupported set-field oxm %s for table %d", of_object_id_str[oxm.header.object_id], flow->tableId);
+              LOG_ERROR("Unsupported set-field oxm %s for table %d", of_object_id_str[oxm.object_id], flow->tableId);
               return INDIGO_ERROR_COMPAT;
             }
             break;
           }
+#ifdef ROBS_HACK
           case OF_OXM_OFDPA_OVID: 
           {
             uint16_t vlan_vid;
@@ -1491,10 +1511,11 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
             }
             break;
           }
+#endif // ROBS_HACK
           case OF_OXM_VLAN_VID: 
           {
             uint16_t vlan_vid;
-            of_oxm_vlan_vid_value_get(&oxm.vlan_vid, &vlan_vid);
+            of_oxm_vlan_vid_value_get(&oxm, &vlan_vid);
             if (flow->tableId == OFDPA_FLOW_TABLE_ID_VLAN)
             {
               if (flow->flowData.vlanFlowEntry.pushVlan2Action == 1)
@@ -1547,7 +1568,7 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
             }
             else
             {
-              LOG_ERROR("Unsupported set-field oxm %s for table %d", of_object_id_str[oxm.header.object_id], flow->tableId);
+              LOG_ERROR("Unsupported set-field oxm %s for table %d", of_object_id_str[oxm.object_id], flow->tableId);
               return INDIGO_ERROR_COMPAT;
             }
             break;
@@ -1555,7 +1576,7 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
           case OF_OXM_VLAN_PCP: 
           {
             uint8_t vlan_pcp;
-            of_oxm_vlan_pcp_value_get(&oxm.vlan_pcp, &vlan_pcp);
+            of_oxm_vlan_pcp_value_get(&oxm, &vlan_pcp);
             if (flow->tableId == OFDPA_FLOW_TABLE_ID_ACL_POLICY)
             {
               /*
@@ -1565,11 +1586,12 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
             } 
             else
             {
-              LOG_ERROR("Unsupported set-field oxm %s for table %d", of_object_id_str[oxm.header.object_id], flow->tableId);
+              LOG_ERROR("Unsupported set-field oxm %s for table %d", of_object_id_str[oxm.object_id], flow->tableId);
               return INDIGO_ERROR_COMPAT;
             }
             break;
           }
+#ifdef ROBS_HACK
           case OF_OXM_OFDPA_DEI: 
           {
             uint8_t vlan_dei;
@@ -1588,38 +1610,39 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
             }
             break;
           }
+#endif // ROBS_HACK
           case OF_OXM_ETH_SRC: 
           {
             of_mac_addr_t mac;
-            of_oxm_eth_src_value_get(&oxm.eth_src, &mac);
+            of_oxm_eth_src_value_get(&oxm, &mac);
             break;
           }
           case OF_OXM_ETH_DST: 
           {
             of_mac_addr_t mac;
-            of_oxm_eth_dst_value_get(&oxm.eth_dst, &mac);
+            of_oxm_eth_dst_value_get(&oxm, &mac);
             break;
           }
           case OF_OXM_IPV4_SRC: 
           {
             uint32_t ipv4;
-            of_oxm_ipv4_src_value_get(&oxm.ipv4_src, &ipv4);
+            of_oxm_ipv4_src_value_get(&oxm, &ipv4);
             break;
           }
           case OF_OXM_IPV4_DST: 
           {
             uint32_t ipv4;
-            of_oxm_ipv4_dst_value_get(&oxm.ipv4_dst, &ipv4);
+            of_oxm_ipv4_dst_value_get(&oxm, &ipv4);
             break;
           }
           case OF_OXM_IP_DSCP: 
           {
             uint8_t ip_dscp;
-            of_oxm_ip_dscp_value_get(&oxm.ip_dscp, &ip_dscp);
+            of_oxm_ip_dscp_value_get(&oxm, &ip_dscp);
             if (ip_dscp > ((uint8_t)IND_OFDPA_IP_DSCP_MASK >> 2)) 
             {
               LOG_ERROR("invalid dscp %d in action %s", ip_dscp,
-                        of_object_id_str[act.header.object_id]);
+                        of_object_id_str[act.object_id]);
               return INDIGO_ERROR_COMPAT;
             }
             if (flow->tableId == OFDPA_FLOW_TABLE_ID_ACL_POLICY)
@@ -1631,7 +1654,7 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
             }
             else
             {
-              LOG_ERROR("Unsupported set-field oxm %s for table %d", of_object_id_str[oxm.header.object_id], flow->tableId);
+              LOG_ERROR("Unsupported set-field oxm %s for table %d", of_object_id_str[oxm.object_id], flow->tableId);
               return INDIGO_ERROR_COMPAT;
             }
             break;
@@ -1639,12 +1662,12 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
           case OF_OXM_IP_ECN: 
           {
             uint8_t ip_ecn;
-            of_oxm_ip_ecn_value_get(&oxm.ip_ecn, &ip_ecn);
+            of_oxm_ip_ecn_value_get(&oxm, &ip_ecn);
 
             if (ip_ecn > IND_OFDPA_IP_ECN_MASK) 
             {
               LOG_ERROR("invalid ecn %d in action %s", ip_ecn,
-                        of_object_id_str[act.header.object_id]);
+                        of_object_id_str[act.object_id]);
               return INDIGO_ERROR_COMPAT;
             }
             if (flow->tableId == OFDPA_FLOW_TABLE_ID_ACL_POLICY)
@@ -1656,7 +1679,7 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
             }
             else
             {
-              LOG_ERROR("Unsupported set-field oxm %s for table %d", of_object_id_str[oxm.header.object_id], flow->tableId);
+              LOG_ERROR("Unsupported set-field oxm %s for table %d", of_object_id_str[oxm.object_id], flow->tableId);
               return INDIGO_ERROR_COMPAT;
             }
             break;
@@ -1664,23 +1687,23 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
           case OF_OXM_IPV6_SRC: 
           {
             of_ipv6_t ipv6;
-            of_oxm_ipv6_src_value_get(&oxm.ipv6_src, &ipv6);
+            of_oxm_ipv6_src_value_get(&oxm, &ipv6);
             break;
           }
           case OF_OXM_IPV6_DST: 
           {
             of_ipv6_t ipv6;
-            of_oxm_ipv6_dst_value_get(&oxm.ipv6_dst, &ipv6);
+            of_oxm_ipv6_dst_value_get(&oxm, &ipv6);
             break;
           }
           case OF_OXM_IPV6_FLABEL: 
           {
             uint32_t flabel;
-            of_oxm_ipv6_flabel_value_get(&oxm.ipv6_flabel, &flabel);
+            of_oxm_ipv6_flabel_value_get(&oxm, &flabel);
             if (flabel > IND_OFDPA_IPV6_FLABEL_MASK) 
             {
               LOG_ERROR("invalid flabel 0x%04x in action %s", flabel,
-                        of_object_id_str[act.header.object_id]);
+                        of_object_id_str[act.object_id]);
               return INDIGO_ERROR_COMPAT;
             }
             break;
@@ -1688,27 +1711,28 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
           case OF_OXM_TCP_SRC: 
           {
             uint16_t port;
-            of_oxm_tcp_src_value_get(&oxm.tcp_src, &port);
+            of_oxm_tcp_src_value_get(&oxm, &port);
             break;
           }
           case OF_OXM_TCP_DST: 
           {
             uint16_t port;
-            of_oxm_tcp_dst_value_get(&oxm.tcp_dst, &port);
+            of_oxm_tcp_dst_value_get(&oxm, &port);
             break;
           }
           case OF_OXM_UDP_SRC:
           {
             uint16_t port;
-            of_oxm_udp_src_value_get(&oxm.udp_src, &port);
+            of_oxm_udp_src_value_get(&oxm, &port);
             break;
           }
           case OF_OXM_UDP_DST: 
           {
             uint16_t port;
-            of_oxm_udp_dst_value_get(&oxm.udp_dst, &port);
+            of_oxm_udp_dst_value_get(&oxm, &port);
             break;
           }
+#ifdef ROBS_HACK
           case OF_OXM_OFDPA_TC: 
           {
             uint8_t tc;
@@ -1839,8 +1863,9 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
             break;
           }
          
+#endif // ROBS_HACK
           default:
-            LOG_ERROR("unsupported set-field oxm %s for table %d", of_object_id_str[oxm.header.object_id], flow->tableId);
+            LOG_ERROR("unsupported set-field oxm %s for table %d", of_object_id_str[oxm.object_id], flow->tableId);
             return INDIGO_ERROR_COMPAT;
         }
         break;
@@ -1848,7 +1873,7 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
       case OF_ACTION_SET_QUEUE:
       {
         uint32_t queue_id;
-        of_action_set_queue_queue_id_get(&act.set_queue, &queue_id);
+        of_action_set_queue_queue_id_get(&act, &queue_id);
         if (flow->tableId == OFDPA_FLOW_TABLE_ID_ACL_POLICY)
         {
           flow->flowData.policyAclFlowEntry.queueIDAction = 1;
@@ -1856,7 +1881,7 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
         }
         else
         {
-          LOG_ERROR("Unsupported action %s for table %d", of_object_id_str[act.header.object_id], flow->tableId);
+          LOG_ERROR("Unsupported action %s for table %d", of_object_id_str[act.object_id], flow->tableId);
           return INDIGO_ERROR_COMPAT;
         }
         break;
@@ -1864,55 +1889,55 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
       case OF_ACTION_SET_DL_DST: 
       {
         of_mac_addr_t mac;
-        of_action_set_dl_dst_dl_addr_get(&act.set_dl_dst, &mac);
+        of_action_set_dl_dst_dl_addr_get(&act, &mac);
         break;
       }
       case OF_ACTION_SET_DL_SRC: 
       {
         of_mac_addr_t mac;
-        of_action_set_dl_src_dl_addr_get(&act.set_dl_src, &mac);
+        of_action_set_dl_src_dl_addr_get(&act, &mac);
         break;
       }
       case OF_ACTION_SET_NW_DST: 
       {
         uint32_t ipv4;
-        of_action_set_nw_dst_nw_addr_get(&act.set_nw_dst, &ipv4);
+        of_action_set_nw_dst_nw_addr_get(&act, &ipv4);
         break;
       }
       case OF_ACTION_SET_NW_SRC: 
       {
         uint32_t ipv4;
-        of_action_set_nw_src_nw_addr_get(&act.set_nw_src, &ipv4);
+        of_action_set_nw_src_nw_addr_get(&act, &ipv4);
         break;
       }
       case OF_ACTION_SET_NW_TOS: 
       {
         uint8_t tos;
-        of_action_set_nw_tos_nw_tos_get(&act.set_nw_tos, &tos);
+        of_action_set_nw_tos_nw_tos_get(&act, &tos);
         break;
       }
       case OF_ACTION_SET_TP_DST: 
       {
         uint16_t port;
-        of_action_set_tp_dst_tp_port_get(&act.set_tp_dst, &port);
+        of_action_set_tp_dst_tp_port_get(&act, &port);
         break;
       }
       case OF_ACTION_SET_TP_SRC: 
       {
         uint16_t port;
-        of_action_set_tp_src_tp_port_get(&act.set_tp_src, &port);
+        of_action_set_tp_src_tp_port_get(&act, &port);
         break;
       }
       case OF_ACTION_SET_VLAN_VID: 
       {
         uint16_t vlan_vid;
-        of_action_set_vlan_vid_vlan_vid_get(&act.set_vlan_vid, &vlan_vid);
+        of_action_set_vlan_vid_vlan_vid_get(&act, &vlan_vid);
         break;
       }
       case OF_ACTION_SET_VLAN_PCP: 
       {
         uint8_t vlan_pcp;
-        of_action_set_vlan_pcp_vlan_pcp_get(&act.set_vlan_pcp, &vlan_pcp);
+        of_action_set_vlan_pcp_vlan_pcp_get(&act, &vlan_pcp);
         break;
       }
       case OF_ACTION_POP_VLAN:
@@ -1940,7 +1965,7 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
         }
         else
         {
-          LOG_ERROR("Unsupported action %s for table %d", of_object_id_str[act.header.object_id], flow->tableId);
+          LOG_ERROR("Unsupported action %s for table %d", of_object_id_str[act.object_id], flow->tableId);
           return INDIGO_ERROR_COMPAT;
         }
         break;
@@ -1951,12 +1976,12 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
       case OF_ACTION_PUSH_VLAN: 
       {
         uint16_t eth_type;
-        of_action_push_vlan_ethertype_get(&act.push_vlan, &eth_type);
+        of_action_push_vlan_ethertype_get(&act, &eth_type);
 
         if (eth_type != ETH_P_8021Q && eth_type != 0x88a8) 
         {
           LOG_ERROR("unsupported eth_type 0x%04x in action %s", eth_type,
-                    of_object_id_str[act.header.object_id]);
+                    of_object_id_str[act.object_id]);
           return INDIGO_ERROR_COMPAT;
         }
         if (flow->tableId == OFDPA_FLOW_TABLE_ID_VLAN)
@@ -1981,7 +2006,7 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
         }
         else
         {
-          LOG_ERROR("Unsupported action %s for table %d", of_object_id_str[act.header.object_id], flow->tableId);
+          LOG_ERROR("Unsupported action %s for table %d", of_object_id_str[act.object_id], flow->tableId);
           return INDIGO_ERROR_COMPAT;
         }
         break;
@@ -1994,7 +2019,7 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
       case OF_ACTION_SET_NW_TTL: 
       {
         uint8_t ttl;
-        of_action_set_nw_ttl_nw_ttl_get(&act.set_nw_ttl, &ttl);
+        of_action_set_nw_ttl_nw_ttl_get(&act, &ttl);
         break;
       }
       case OF_ACTION_POP_MPLS: 
@@ -2005,12 +2030,12 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
         {
           flow->flowData.mplsFlowEntry.popLabelAction = 1;
           uint16_t ether_type;
-          of_action_pop_mpls_ethertype_get(&act.pop_mpls, &ether_type);
+          of_action_pop_mpls_ethertype_get(&act, &ether_type);
           flow->flowData.mplsFlowEntry.newEtherType = ether_type;
         }
         else
         {
-          LOG_ERROR("Unsupported action %s for table %d", of_object_id_str[act.header.object_id], flow->tableId);
+          LOG_ERROR("Unsupported action %s for table %d", of_object_id_str[act.object_id], flow->tableId);
           return INDIGO_ERROR_COMPAT;
         }
         break;
@@ -2025,7 +2050,7 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
         }
         else
         {
-          LOG_ERROR("Unsupported action %s for table %d", of_object_id_str[act.header.object_id], flow->tableId);
+          LOG_ERROR("Unsupported action %s for table %d", of_object_id_str[act.object_id], flow->tableId);
           return INDIGO_ERROR_COMPAT;
         }
         break;
@@ -2040,11 +2065,12 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
         }
         else
         {
-          LOG_ERROR("Unsupported action %s for table %d", of_object_id_str[act.header.object_id], flow->tableId);
+          LOG_ERROR("Unsupported action %s for table %d", of_object_id_str[act.object_id], flow->tableId);
           return INDIGO_ERROR_COMPAT;
         }
         break;
       }
+#ifdef ROBS_HACK
       case OF_ACTION_OFDPA_POP_L2HDR: 
       {
         if (flow->tableId == OFDPA_FLOW_TABLE_ID_MPLS_0 ||
@@ -2225,10 +2251,11 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
         }
         break;
       }
+#endif // ROBS_HACK
       case OF_ACTION_GROUP: 
       {
         uint32_t group_id;
-        of_action_group_group_id_get(&act.group, &group_id);
+        of_action_group_group_id_get(&act, &group_id);
         switch(flow->tableId)
         {
           case OFDPA_FLOW_TABLE_ID_MPLS_L2_PORT:
@@ -2258,13 +2285,13 @@ static indigo_error_t ind_ofdpa_translate_openflow_actions(of_list_action_t *act
             break;
 
           default:
-            LOG_ERROR("Unsupported action %s for table %d", of_object_id_str[act.header.object_id], flow->tableId);
+            LOG_ERROR("Unsupported action %s for table %d", of_object_id_str[act.object_id], flow->tableId);
             return INDIGO_ERROR_COMPAT;
         }
         break;
       }
       default:
-       LOG_ERROR("unsupported action %s", of_object_id_str[act.header.object_id]);
+       LOG_ERROR("unsupported action %s", of_object_id_str[act.object_id]);
        return INDIGO_ERROR_COMPAT;
     }
   }
@@ -2291,7 +2318,7 @@ ind_ofdpa_instructions_get(of_flow_modify_t *flow_mod, ofdpaFlowEntry_t *flow)
 
   OF_LIST_INSTRUCTION_ITER(&insts, &inst, rv) 
   {
-    switch (inst.header.object_id) 
+    switch (inst.object_id) 
     {
       case OF_INSTRUCTION_APPLY_ACTIONS:
         switch(flow->tableId)
@@ -2322,12 +2349,11 @@ ind_ofdpa_instructions_get(of_flow_modify_t *flow_mod, ofdpaFlowEntry_t *flow)
           case OFDPA_FLOW_TABLE_ID_UNICAST_ROUTING:
           case OFDPA_FLOW_TABLE_ID_MULTICAST_ROUTING:
           default:
-            LOG_ERROR("Unsupported instruction %s for flow table %d.", of_object_id_str[inst.header.object_id], flow->tableId);
+            LOG_ERROR("Unsupported instruction %s for flow table %d.", of_object_id_str[inst.object_id], flow->tableId);
             return INDIGO_ERROR_COMPAT;
         }
 
-        of_instruction_apply_actions_actions_bind(&inst.apply_actions, 
-                                                  &openflow_actions);
+        of_instruction_apply_actions_actions_bind(&inst, &openflow_actions);
         if ((err = ind_ofdpa_translate_openflow_actions(&openflow_actions,
                                                         flow)) < 0) 
         {
@@ -2352,11 +2378,10 @@ ind_ofdpa_instructions_get(of_flow_modify_t *flow_mod, ofdpaFlowEntry_t *flow)
           case OFDPA_FLOW_TABLE_ID_INGRESS_PORT:
           case OFDPA_FLOW_TABLE_ID_TERMINATION_MAC:
           default:
-            LOG_ERROR("Unsupported instruction %s for flow table %d.", of_object_id_str[inst.header.object_id], flow->tableId);
+            LOG_ERROR("Unsupported instruction %s for flow table %d.", of_object_id_str[inst.object_id], flow->tableId);
             return INDIGO_ERROR_COMPAT;
         }
-        of_instruction_write_actions_actions_bind(&inst.write_actions,
-                                                  &openflow_actions);
+        of_instruction_write_actions_actions_bind(&inst, &openflow_actions);
         if ((err = ind_ofdpa_translate_openflow_actions(&openflow_actions,
                                                         flow)) < 0) 
         {
@@ -2370,12 +2395,12 @@ ind_ofdpa_instructions_get(of_flow_modify_t *flow_mod, ofdpaFlowEntry_t *flow)
         }
         else
         {
-          LOG_ERROR("Unsupported instruction %s for flow table %d.", of_object_id_str[inst.header.object_id], flow->tableId);
+          LOG_ERROR("Unsupported instruction %s for flow table %d.", of_object_id_str[inst.object_id], flow->tableId);
           return INDIGO_ERROR_COMPAT;
         }
         break;
       case OF_INSTRUCTION_GOTO_TABLE:
-        of_instruction_goto_table_table_id_get(&inst.goto_table, &next_table_id);
+        of_instruction_goto_table_table_id_get(&inst, &next_table_id);
 
         switch(flow->tableId)
         {
@@ -2431,16 +2456,16 @@ ind_ofdpa_instructions_get(of_flow_modify_t *flow_mod, ofdpaFlowEntry_t *flow)
             flow->flowData.pcpTrustFlowEntry.gotoTableId = next_table_id;
             break;
           case OFDPA_FLOW_TABLE_ID_ACL_POLICY:
-            LOG_ERROR("Unsupported instruction %s for flow table %d.", of_object_id_str[inst.header.object_id], flow->tableId);
+            LOG_ERROR("Unsupported instruction %s for flow table %d.", of_object_id_str[inst.object_id], flow->tableId);
             return INDIGO_ERROR_COMPAT;
           default:
-            LOG_ERROR("Unsupported instruction %s for flow table %d.", of_object_id_str[inst.header.object_id], flow->tableId);
+            LOG_ERROR("Unsupported instruction %s for flow table %d.", of_object_id_str[inst.object_id], flow->tableId);
             return INDIGO_ERROR_COMPAT;
             break;
         }
         break;
       case OF_INSTRUCTION_METER:
-        of_instruction_meter_meter_id_get(&inst.meter, &meter_id);
+        of_instruction_meter_meter_id_get(&inst, &meter_id);
         LOG_ERROR("Unsupported instruction: meter_id.");
         break;
       default:
@@ -2461,12 +2486,12 @@ static indigo_error_t ind_ofdpa_packet_out_actions_get(of_list_action_t *of_list
 
   OF_LIST_ACTION_ITER(of_list_actions, &act, rv)
   {
-    switch (act.header.object_id)
+    switch (act.object_id)
     {
       case OF_ACTION_OUTPUT:
       {
         of_port_no_t port_no;
-        of_action_output_port_get(&act.output, &port_no);
+        of_action_output_port_get(&act, &port_no);
         switch (port_no)
         {
           case OF_PORT_DEST_CONTROLLER:
@@ -2488,7 +2513,7 @@ static indigo_error_t ind_ofdpa_packet_out_actions_get(of_list_action_t *of_list
         break;
       }
       default:
-        LOG_ERROR("Unsupported action for packet out: %s", of_object_id_str[act.header.object_id]);
+        LOG_ERROR("Unsupported action for packet out: %s", of_object_id_str[act.object_id]);
         err = INDIGO_ERROR_NOT_SUPPORTED;
         break;
     }
@@ -2702,10 +2727,14 @@ indigo_error_t indigo_fwd_flow_delete(indigo_cookie_t flow_id,
     return (indigoConvertOfdpaRv(ofdpa_rv));
   }
 
+#ifdef ROBS_HACK
   flow_stats->flow_id = flow_id;
+#endif // ROBS_HACK
   flow_stats->packets = flowStats.receivedPackets;
   flow_stats->bytes = flowStats.receivedBytes;
+#ifdef ROBS_HACK
   flow_stats->duration_ns = (flowStats.durationSec)*(IND_OFDPA_NANO_SEC); /* Convert to nano seconds*/
+#endif // ROBS_HACK
 
   /* Delete the flow entry */
   ofdpa_rv = ofdpaFlowByCookieDelete(flow_id);
@@ -2735,8 +2764,10 @@ indigo_error_t indigo_fwd_flow_stats_get(indigo_cookie_t flow_id,
   ofdpa_rv = ofdpaFlowByCookieGet(flow_id, &flow, &flowStats);
   if (ofdpa_rv == OFDPA_E_NONE)
   {
+#ifdef ROBS_HACK
     flow_stats->flow_id = flow_id;
     flow_stats->duration_ns = (flowStats.durationSec) * (IND_OFDPA_NANO_SEC); /* Convert to nsecs */
+#endif // ROBS_HACK
     flow_stats->packets = flowStats.receivedPackets;
     flow_stats->bytes = flowStats.receivedBytes;
 
