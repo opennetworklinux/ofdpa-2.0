@@ -1,0 +1,9 @@
+[submodule "submodules/bigcode"]
+	path = submodules/bigcode
+	url = git://github.com/floodlight/bigcode
+[submodule "submodules/infra"]
+	path = submodules/infra
+	url = git://github.com/floodlight/infra
+[submodule "submodules/common"]
+	path = submodules/common
+	url = git://github.com/opennetworklinux/common
