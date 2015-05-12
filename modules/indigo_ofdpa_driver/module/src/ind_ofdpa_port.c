@@ -59,12 +59,8 @@ static indigo_error_t ind_ofdpa_queue_config_queue_set(of_packet_queue_t *of_pac
   OFDPA_ERROR_t ofdpa_rv = OFDPA_E_NONE;
   uint32_t minRate, maxRate;
   of_list_queue_prop_t of_list_queue_prop;
-  of_queue_prop_t of_queue_prop;
-  of_queue_prop_min_rate_t *min_rate;
-  of_queue_prop_max_rate_t *max_rate;
-
-  min_rate = &of_queue_prop.min_rate;
-  max_rate = &of_queue_prop.max_rate;
+  of_queue_prop_min_rate_t min_rate;
+  of_queue_prop_max_rate_t max_rate;
 
   /* Set the queue id: id for the specific queue. */
   of_packet_queue_queue_id_set(of_packet_queue, queueId);
@@ -80,16 +76,20 @@ static indigo_error_t ind_ofdpa_queue_config_queue_set(of_packet_queue_t *of_pac
   }
   else
   {
+          /** ROBS FIXME: logic here confuses me and I think I'm not fixing it
+           * need to come back and make sure we're not trying to persist
+           * stack allocated objects -- just try to compile first
+           */
     of_packet_queue_properties_bind(of_packet_queue, &of_list_queue_prop);
 
-    of_queue_prop_min_rate_init(min_rate, of_packet_queue->version, -1, 1);
-    of_list_queue_prop_append_bind(&of_list_queue_prop, (of_queue_prop_t *)min_rate);
-    of_queue_prop_min_rate_rate_set(min_rate, (uint16_t)minRate);
+    of_queue_prop_min_rate_init(&min_rate, of_packet_queue->version, -1, 1);
+    of_list_queue_prop_append_bind(&of_list_queue_prop, (of_queue_prop_t *)&min_rate);
+    of_queue_prop_min_rate_rate_set(&min_rate, (uint16_t)minRate);
 
 
-    of_queue_prop_max_rate_init(max_rate, of_packet_queue->version, -1, 1);
-    of_list_queue_prop_append_bind(&of_list_queue_prop, (of_queue_prop_t *)max_rate);
-    of_queue_prop_max_rate_rate_set(max_rate, (uint16_t)maxRate);
+    of_queue_prop_max_rate_init(&max_rate, of_packet_queue->version, -1, 1);
+    of_list_queue_prop_append_bind(&of_list_queue_prop, (of_queue_prop_t *)&max_rate);
+    of_queue_prop_max_rate_rate_set(&max_rate, (uint16_t)maxRate);
 
   }
 
@@ -911,7 +911,7 @@ ind_ofdpa_port_event_receive(void)
     }
 
     of_port_status_reason_set(of_port_status, reason);
-    of_port_status_desc_set(of_port_status, of_port_desc);
+    assert(of_port_status_desc_set(of_port_status, of_port_desc) == OF_ERROR_NONE);
     of_port_desc_delete(of_port_desc);
 
     indigo_core_port_status_update(of_port_status);
