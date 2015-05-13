@@ -911,7 +911,10 @@ ind_ofdpa_port_event_receive(void)
     }
 
     of_port_status_reason_set(of_port_status, reason);
-    assert(of_port_status_desc_set(of_port_status, of_port_desc) == OF_ERROR_NONE);
+    if (of_port_status_desc_set(of_port_status, of_port_desc) < 0) {
+        LOG_ERROR("Unexpected failure setting port desc");
+        break;
+    }
     of_port_desc_delete(of_port_desc);
 
     indigo_core_port_status_update(of_port_status);
