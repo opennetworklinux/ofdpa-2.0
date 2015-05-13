@@ -688,6 +688,7 @@ int aim_main(int argc, char *argv[])
   }
 
   ind_ofdpa_fwd_init();
+  ind_ofdpa_group_init();
 
   /* Add controllers from command line */
   {

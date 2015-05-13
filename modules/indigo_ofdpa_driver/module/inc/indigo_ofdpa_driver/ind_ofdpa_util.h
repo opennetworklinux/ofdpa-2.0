@@ -323,3 +323,4 @@ void ind_ofdpa_flow_event_receive(void);
 void ind_ofdpa_pkt_receive(void);
 
 void ind_ofdpa_fwd_init(void);
+void ind_ofdpa_group_init(void);

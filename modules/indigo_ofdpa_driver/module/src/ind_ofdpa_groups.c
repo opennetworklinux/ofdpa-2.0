@@ -31,6 +31,7 @@
 **********************************************************************/
 
 #include <indigo/forwarding.h>
+#include <indigo/of_state_manager.h>
 #include <indigo_ofdpa_driver/ind_ofdpa_util.h>
 #include <indigo_ofdpa_driver/ind_ofdpa_log.h>
 
@@ -736,7 +737,10 @@ ind_ofdpa_translate_group_buckets(uint32_t group_id,
   return indigoConvertOfdpaRv(ofdpa_rv);
 }
 
-indigo_error_t indigo_fwd_group_add(uint32_t id, uint8_t group_type, of_list_bucket_t *buckets)
+static indigo_error_t
+group_create(void *table_priv, indigo_cxn_id_t cxn_id,
+             uint32_t group_id, uint8_t group_type, of_list_bucket_t *buckets,
+             void **entry_priv)
 {
   indigo_error_t err;
 
@@ -748,27 +752,33 @@ indigo_error_t indigo_fwd_group_add(uint32_t id, uint8_t group_type, of_list_buc
     return INDIGO_ERROR_NOT_SUPPORTED;
   }
 
-  err = ind_ofdpa_translate_group_buckets(id, buckets, OF_GROUP_ADD);
+  err = ind_ofdpa_translate_group_buckets(group_id, buckets, OF_GROUP_ADD);
+
+  *entry_priv = INDIGO_COOKIE_TO_POINTER(group_id);
 
   return err;
 }
 
-indigo_error_t indigo_fwd_group_modify(uint32_t id, of_list_bucket_t *buckets)
+static indigo_error_t
+group_modify(void *table_priv,
+             indigo_cxn_id_t cxn_id,
+             void *entry_priv,
+             of_list_bucket_t *buckets)
 {
   indigo_error_t err;
+  uint32_t id = INDIGO_POINTER_TO_COOKIE(entry_priv);
 
   err = ind_ofdpa_translate_group_buckets(id, buckets, OF_GROUP_MODIFY);
 
   return err;
 }
 
-#ifdef OFDPA_FIXUP
-indigo_error_t indigo_fwd_group_delete(uint32_t id)
-#else
-void indigo_fwd_group_delete(uint32_t id)
-#endif
+static indigo_error_t
+group_delete(void *table_priv, indigo_cxn_id_t cxn_id,
+             void *entry_priv)
 {
   OFDPA_ERROR_t ofdpa_rv;
+  uint32_t id = INDIGO_POINTER_TO_COOKIE(entry_priv);
 
   ofdpa_rv = ofdpaGroupDelete(id);
 
@@ -777,17 +787,16 @@ void indigo_fwd_group_delete(uint32_t id)
     LOG_ERROR("Group Delete failed, rv = %d",ofdpa_rv);
   }
   
-#ifdef OFDPA_FIXUP
   return indigoConvertOfdpaRv(ofdpa_rv);
-#else
-  return;
-#endif
 }
 
-void indigo_fwd_group_stats_get(uint32_t id, of_group_stats_entry_t *entry)
+static indigo_error_t
+group_stats_get(void *table_priv, void *entry_priv,
+                of_group_stats_entry_t *entry)
 {
   OFDPA_ERROR_t ofdpa_rv;
   ofdpaGroupEntryStats_t groupStats;
+  uint32_t id = INDIGO_POINTER_TO_COOKIE(entry_priv);
 
   memset(&groupStats, 0, sizeof(groupStats));
   ofdpa_rv = ofdpaGroupStatsGet(id, &groupStats);
@@ -802,6 +811,27 @@ void indigo_fwd_group_stats_get(uint32_t id, of_group_stats_entry_t *entry)
     of_group_stats_entry_duration_sec_set(entry, groupStats.duration);
   }
 
-  return;
+  return indigoConvertOfdpaRv(ofdpa_rv);
+}
+
+static const indigo_core_group_table_ops_t group_table_ops = {
+    .entry_create = group_create,
+    .entry_modify = group_modify,
+    .entry_delete = group_delete,
+    .entry_stats_get = group_stats_get,
+};
+
+void
+ind_ofdpa_group_init(void)
+{
+    /*
+     * OFDPA uses the top 4 bits as the group table ID, where Indigo
+     * uses the top 8 bits. The ops for every table are the same
+     * so we just register all 256 tables.
+     */
+    int i;
+    for (i = 0; i < 256; i++) {
+        indigo_core_group_table_register(i, "group", &group_table_ops, NULL);
+    }
 }
 
