@@ -321,3 +321,5 @@ indigo_error_t indigoConvertOfdpaRv(OFDPA_ERROR_t result);
 void ind_ofdpa_port_event_receive(void);
 void ind_ofdpa_flow_event_receive(void);
 void ind_ofdpa_pkt_receive(void);
+
+void ind_ofdpa_fwd_init(void);

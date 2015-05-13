@@ -2547,9 +2547,12 @@ indigo_error_t indigo_fwd_forwarding_features_get(of_features_reply_t *features_
   return INDIGO_ERROR_NONE;
 }
 
-indigo_error_t indigo_fwd_flow_create(indigo_cookie_t flow_id,
-                                      of_flow_add_t *flow_add,
-                                      uint8_t *table_id)
+static indigo_error_t
+flow_create(void *table_priv,
+                indigo_cxn_id_t cxn_id,
+                of_flow_add_t *flow_add,
+                indigo_cookie_t flow_id,
+                void **entry_priv)
 {
   indigo_error_t err = INDIGO_ERROR_NONE;
   OFDPA_ERROR_t ofdpa_rv = OFDPA_E_NONE;
@@ -2557,6 +2560,7 @@ indigo_error_t indigo_fwd_flow_create(indigo_cookie_t flow_id,
   ofdpaFlowEntryStats_t  flowStats;
   uint16_t priority;
   uint16_t idle_timeout, hard_timeout; 
+  uint8_t table_id;
   of_match_t of_match;
 
   LOG_TRACE("Flow create called");
@@ -2573,8 +2577,8 @@ indigo_error_t indigo_fwd_flow_create(indigo_cookie_t flow_id,
   flow.cookie = flow_id;
 
   /* Get the Flow Table ID */
-  of_flow_add_table_id_get(flow_add, table_id);
-  flow.tableId = (uint32_t)*table_id;
+  of_flow_add_table_id_get(flow_add, &table_id);
+  flow.tableId = table_id;
 
   /* ofdpa Flow priority */
   of_flow_add_priority_get(flow_add, &priority);
@@ -2621,18 +2625,23 @@ indigo_error_t indigo_fwd_flow_create(indigo_cookie_t flow_id,
     LOG_TRACE("Flow added successfully. (ofdpa_rv = %d)", ofdpa_rv);
   }
   
+  *entry_priv = INDIGO_COOKIE_TO_POINTER(flow_id);
 
   return (indigoConvertOfdpaRv(ofdpa_rv));
 }
 
-indigo_error_t indigo_fwd_flow_modify(indigo_cookie_t flow_id,
-                                      of_flow_modify_t *flow_modify)
+static indigo_error_t
+flow_modify(void *table_priv,
+        indigo_cxn_id_t cxn_id,
+        void *entry_priv,
+        of_flow_modify_strict_t *flow_modify)
 {
   indigo_error_t err = INDIGO_ERROR_NONE;
   ofdpaFlowEntry_t flow;
   ofdpaFlowEntryStats_t flowStats;
   OFDPA_ERROR_t ofdpa_rv = OFDPA_E_NONE;  
   of_match_t of_match;
+  indigo_cookie_t flow_id = INDIGO_POINTER_TO_COOKIE(entry_priv);
 
   LOG_TRACE("Flow modify called");      
 
@@ -2699,13 +2708,17 @@ indigo_error_t indigo_fwd_flow_modify(indigo_cookie_t flow_id,
   return (indigoConvertOfdpaRv(ofdpa_rv));
 }
 
-indigo_error_t indigo_fwd_flow_delete(indigo_cookie_t flow_id,
-                                      indigo_fi_flow_stats_t *flow_stats)
+static indigo_error_t
+flow_delete(void *table_priv,
+                indigo_cxn_id_t cxn_id,
+                void *entry_priv,
+                indigo_fi_flow_stats_t *flow_stats)
 {
   ofdpaFlowEntry_t flow;
   ofdpaFlowEntryStats_t flowStats;
   OFDPA_ERROR_t ofdpa_rv = OFDPA_E_NONE;
 
+  indigo_cookie_t flow_id = INDIGO_POINTER_TO_COOKIE(entry_priv);
 
   LOG_TRACE("Flow delete called");
 
@@ -2750,12 +2763,17 @@ indigo_error_t indigo_fwd_flow_delete(indigo_cookie_t flow_id,
   return (indigoConvertOfdpaRv(ofdpa_rv));;
 }
 
-indigo_error_t indigo_fwd_flow_stats_get(indigo_cookie_t flow_id,
-                                         indigo_fi_flow_stats_t *flow_stats)
+static indigo_error_t
+flow_stats_get(void *table_priv,
+                indigo_cxn_id_t cxn_id,
+                void *entry_priv,
+                indigo_fi_flow_stats_t *flow_stats)
 {
   OFDPA_ERROR_t ofdpa_rv = OFDPA_E_NONE;
   ofdpaFlowEntry_t flow;
   ofdpaFlowEntryStats_t flowStats;
+
+  indigo_cookie_t flow_id = INDIGO_POINTER_TO_COOKIE(entry_priv);
 
   memset(&flow, 0, sizeof(flow));
   memset(&flowStats, 0, sizeof(flowStats));
@@ -2792,64 +2810,26 @@ void indigo_fwd_table_mod(of_table_mod_t *of_table_mod,
   return;
 }
 
-indigo_error_t indigo_fwd_table_stats_get(of_table_stats_request_t *table_stats_request,
-                                          of_table_stats_reply_t **table_stats_reply)
+static indigo_error_t
+table_stats_get(void *table_priv,
+        indigo_cxn_id_t cxn_id,
+        indigo_fi_table_stats_t *table_stats)
 {
-  of_version_t version = table_stats_request->version;
   OFDPA_ERROR_t ofdpa_rv = OFDPA_E_NONE;
-  uint32_t xid;
-  uint32_t i;
   ofdpaFlowTableInfo_t tableInfo;
-  of_table_stats_entry_t entry[1];
-  of_table_stats_reply_t *reply;
-  
 
-  if (version < OF_VERSION_1_3)
+  uint8_t table_id = INDIGO_POINTER_TO_COOKIE(table_priv);
+
+  ofdpa_rv = ofdpaFlowTableInfoGet(table_id, &tableInfo);
+  if (ofdpa_rv != OFDPA_E_NONE)
   {
-    LOG_ERROR("Unsupported OpenFlow version 0x%x.", version);
-    return INDIGO_ERROR_VERSION;
+    LOG_ERROR("Error getting flow table info. (ofdpa_rv = %d)", ofdpa_rv);
+    return (indigoConvertOfdpaRv(ofdpa_rv));
   }
 
-  reply = of_table_stats_reply_new(version);
-  if (reply == NULL) 
-  {
-    LOG_ERROR("Error allocating memory");  
-    return INDIGO_ERROR_RESOURCE; 
-  }
-
-  *table_stats_reply = reply;
-
-  of_table_stats_request_xid_get(table_stats_request, &xid);
-  of_table_stats_reply_xid_set(*table_stats_reply, xid);
-
-  of_list_table_stats_entry_t list[1];
-  of_table_stats_reply_entries_bind(*table_stats_reply, list);
-
-  
-  for (i = 0; i < TABLE_NAME_LIST_SIZE; i++)
-  {
-    of_table_stats_entry_init(entry, version, -1, 1);
-    (void) of_list_table_stats_entry_append_bind(list, entry);
-
-    ofdpa_rv = ofdpaFlowTableInfoGet(tableNameList[i].type, &tableInfo);
-    if (ofdpa_rv != OFDPA_E_NONE)
-    {
-      LOG_ERROR("Error getting flow table info. (ofdpa_rv = %d)", ofdpa_rv);
-      return (indigoConvertOfdpaRv(ofdpa_rv));
-    }
-
-    /* Table Id */
-    of_table_stats_entry_table_id_set(entry, tableNameList[i].type);
-
-    /* Number of entries in the table */
-    of_table_stats_entry_active_count_set(entry, tableInfo.numEntries);
-
-    /* Number of packets looked up in table. */
-    of_table_stats_entry_lookup_count_set(entry, 0);
-
-    /* Number of packets that hit table. */
-    of_table_stats_entry_matched_count_set(entry, 0);
-  }
+  table_stats->max_entries = tableInfo.maxEntries;
+  table_stats->lookup_count = 0;
+  table_stats->matched_count = 0;
 
   return (indigoConvertOfdpaRv(ofdpa_rv));
 }
@@ -3083,4 +3063,25 @@ indigo_fwd_pipeline_stats_get(of_desc_str_t **pipeline, int *num_pipelines)
 {
     LOG_TRACE("fwd switch pipeline stats get");
     *num_pipelines = 0;
+}
+
+
+static const indigo_core_table_ops_t table_ops = {
+    .entry_create = flow_create,
+    .entry_modify = flow_modify,
+    .entry_delete = flow_delete,
+    .entry_stats_get = flow_stats_get,
+    .entry_hit_status_get = NULL, /* TODO */
+    .table_stats_get = table_stats_get,
+};
+
+void
+ind_ofdpa_fwd_init(void)
+{
+    int i;
+    for (i = 0; i < TABLE_NAME_LIST_SIZE; i++) {
+        indigo_core_table_register(
+            tableNameList[i].type, tableNameList[i].name,
+            &table_ops, INDIGO_COOKIE_TO_POINTER(tableNameList[i].type));
+    }
 }

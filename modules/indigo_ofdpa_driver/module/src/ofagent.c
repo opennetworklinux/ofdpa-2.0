@@ -687,6 +687,8 @@ int aim_main(int argc, char *argv[])
       return 1;
   }
 
+  ind_ofdpa_fwd_init();
+
   /* Add controllers from command line */
   {
       biglist_t *element;
