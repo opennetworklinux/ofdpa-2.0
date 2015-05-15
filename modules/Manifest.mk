@@ -8,6 +8,7 @@
 ##############################################################################
 BASEDIR := $(dir $(lastword $(MAKEFILE_LIST)))
 indigo_ofdpa_driver_BASEDIR := $(BASEDIR)indigo_ofdpa_driver
+ofdpa_tools_BASEDIR := $(BASEDIR)ofdpa_tools
 
 
-ALL_MODULES := $(ALL_MODULES) indigo_ofdpa_driver
+ALL_MODULES := $(ALL_MODULES) indigo_ofdpa_driver ofdpa_tools
