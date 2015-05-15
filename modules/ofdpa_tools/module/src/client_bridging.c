@@ -357,7 +357,7 @@ int main(int argc, char *argv[])
   }
   flow.flowData.bridgingFlowEntry.groupID = arguments.groupId;
   ofdpaGroupTypeGet(flow.flowData.bridgingFlowEntry.groupID, &groupType);
-  ofdpaGroupVlanGet(flow.flowData.bridgingFlowEntry.groupID, &groupVlan);
+  ofdpaGroupVlanGet(flow.flowData.bridgingFlowEntry.groupID, (uint32_t*) &groupVlan);
   if ((OFDPA_GROUP_ENTRY_TYPE_L2_INTERFACE == groupType) &&
       (0 == groupVlan))
   {
