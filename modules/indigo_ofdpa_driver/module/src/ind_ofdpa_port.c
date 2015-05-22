@@ -375,12 +375,6 @@ indigo_error_t indigo_port_features_get(of_features_reply_t *features)
     ofdpa_rv = ofdpaPortNextGet(port, &nextPort);
   }
 
-  if (of_features_reply_ports_set(features, of_list_port_desc) < 0)
-  {
-    LOG_ERROR("of_features_reply_ports_set() failed");
-    err = INDIGO_ERROR_UNKNOWN;
-  }
-
   /* free the allocated memory */
   of_port_desc_delete(of_port_desc);
   of_list_port_desc_delete(of_list_port_desc);
