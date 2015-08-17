@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <ofdpa_api.h>
@@ -74,11 +75,32 @@ int enable_src_mac_learning(FILE * fp)
     }
     return 0;
 }
+
+void
+usage(char * s1, char *s2)
+{
+    const char * CMD = "ofdpa_l2play";
+    if (s1)
+        fprintf(stderr, "%s", s1);
+    if (s2)
+        fprintf(stderr, " %s", s2);
+    if (s1 || s2)
+        fprintf(stderr, "\n");
+    fprintf(stderr, "Usage:\n\n%s <-list|-patch port1 port2>\n", CMD);
+    fprintf(stderr, "\nExample: %s -patch 1 2\n", CMD);
+    exit(1);
+}
+
 int
 aim_main(int argc, char * argv[])
 {
     OFDPA_ERROR_t rc;
     char * client_name = "ofdpa_l2play";
+
+    /* if too few or not -patch or -list */
+    if ((argc < 2) || ((strcmp(argv[1],"-patch")) &&
+            (strcmp(argv[1],"-list"))))
+        usage(NULL,NULL);
 
     rc = ofdpaClientInitialize(client_name);
     if (OFDPA_E_NONE != rc)
@@ -89,10 +111,29 @@ aim_main(int argc, char * argv[])
     }
 
     printf("Successfully connected to OF-DPA daemon\n");
-    if ((rc = dump_ports(stdout)) != 0)
+    
+    if (!strcmp(argv[1],"-list"))
     {
-        fprintf(stderr, "Error: dump_ports returned %d\n", rc);
+        if ((rc = dump_ports(stdout)) != 0)
+        {
+            fprintf(stderr, "Error: dump_ports returned %d\n", rc);
+        }
+    } else {
+        int port1, port2;
+        if (argc != 4)
+            usage("Not enough arguments for -patch; need 2 ports", NULL);
+        port1 = atoi(argv[2]);
+        port2 = atoi(argv[3]);
+
+        if (port1 < 1 || port1 > 54)
+            usage("Bad port for port1", argv[2]);
+        if (port2 < 1 || port2 > 54)
+            usage("Bad port for port2", argv[2]);
+        patch(port1, port2);
     }
+
+    return 0;
+}
 
 #if 0
     if ((rc = enable_src_mac_learning(stdout)) != 0)
@@ -101,7 +142,3 @@ aim_main(int argc, char * argv[])
     }
 #endif
 
-    patch(1,2);
-
-    return 0;
-}
