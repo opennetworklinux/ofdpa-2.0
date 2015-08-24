@@ -635,8 +635,10 @@ void printUnicastRoutingFlow(ofdpaFlowEntry_t *flow)
   ofdpaUnicastRoutingFlowEntry_t *flowData;
   ofdpaUnicastRoutingFlowMatch_t *match;
   struct in_addr ipv4Addr;
-  char addrBuf[20];
-  char addrMaskBuf[20];
+  char ipv4AddrBuf[INET_ADDRSTRLEN];
+  char ipv4MaskBuf[INET_ADDRSTRLEN];
+  char ipv6AddrBuf[INET6_ADDRSTRLEN];
+  char ipv6MaskBuf[INET6_ADDRSTRLEN];
 
   flowData = &flow->flowData.unicastRoutingFlowEntry;
   match = &flowData->match_criteria;
@@ -646,14 +648,14 @@ void printUnicastRoutingFlow(ofdpaFlowEntry_t *flow)
   printf(" vrf:mask = 0x%04x:0x%04x", match->vrf, match->vrfMask);
 
   ipv4Addr.s_addr = htonl(match->dstIp4);
-  inet_ntop(AF_INET, &ipv4Addr, addrBuf, sizeof(addrBuf));
+  inet_ntop(AF_INET, &ipv4Addr, ipv4AddrBuf, sizeof(ipv4AddrBuf));
   ipv4Addr.s_addr = htonl(match->dstIp4Mask);
-  inet_ntop(AF_INET, &ipv4Addr, addrMaskBuf, sizeof(addrMaskBuf));
-  printf(" dstIp4 = %s/%s", addrBuf, addrMaskBuf);
+  inet_ntop(AF_INET, &ipv4Addr, ipv4MaskBuf, sizeof(ipv4MaskBuf));
+  printf(" dstIp4 = %s/%s", ipv4AddrBuf, ipv4MaskBuf);
 
-  inet_ntop(AF_INET6, &match->dstIp6, addrBuf, sizeof(addrBuf));
-  inet_ntop(AF_INET6, &match->dstIp6Mask, addrMaskBuf, sizeof(addrMaskBuf));
-  printf(" dstIp6 = %s/%s", addrBuf, addrMaskBuf);
+  inet_ntop(AF_INET6, &match->dstIp6, ipv6AddrBuf, sizeof(ipv6AddrBuf));
+  inet_ntop(AF_INET6, &match->dstIp6Mask, ipv6MaskBuf, sizeof(ipv6MaskBuf));
+  printf(" dstIp6 = %s/%s", ipv6AddrBuf, ipv6MaskBuf);
 
   /* instructions */
   printf(" |");
